@@ -1,8 +1,6 @@
-import re
 from datetime import date
-from urllib.parse import parse_qs, urlparse
 
-from playwright.sync_api import Page, expect
+from playwright.sync_api import Page
 
 
 class HomePage:
@@ -13,53 +11,33 @@ class HomePage:
         self.adults_increase_button = page.get_by_test_id("stepper-adults-increase-button")
         self.guests_button = page.get_by_test_id("structured-search-input-field-guests-button")
 
-    def goto(self):
+    def goto(self) -> None:
         self.page.goto("https://www.airbnb.com/")
 
-    def search_destination(self, destination: str):
+    def search_destination(self, destination: str) -> None:
         self.search_input.fill(destination)
         self.page.keyboard.press("Enter")
 
-    def select_dates(self, checkin: date, checkout: date):
+    def select_dates(self, checkin: date, checkout: date) -> None:
         checkin_name = checkin.strftime("%-d, %A, %B %Y.")
         checkout_name = checkout.strftime("%-d, %A, %B %Y.")
         self.page.get_by_role("button", name=checkin_name).click()
         self.page.get_by_role("button", name=checkout_name).click()
 
-    def set_guests(self, guest_count: int):
+    def select_number_of_guests(self, guest_count: int) -> None:
         self.guests_button.click()
 
         for _ in range(guest_count):
             self.adults_increase_button.click()
 
-    def submit_search(self):
+    def submit_search(self) -> None:
         self.search_button.click()
 
-    def validate_airbnb_url(
-        self, destination: str, checkin_date: date, checkout_date: date
+    def search_for_booking(
+        self, destination: str, checkin_date: date, checkout_date: date, number_of_guests: int
     ) -> None:
-        # Validate city in path
-        expect(self.page).to_have_url(re.compile(f".*/s/{destination}/homes"))
-
-        url = self.page.url
-        parsed_url = urlparse(url)
-        params = parse_qs(parsed_url.query)
-
-        # Get and check check-in and check-out dates
-        checkin_actual = params.get("checkin", [None])[0]
-        checkout_actual = params.get("checkout", [None])[0]
-
-        assert checkin_actual, "Checkin date is missing in URL"
-        assert checkout_actual, "Checkout date is missing in URL"
-
-        checkin_expected_formatted = checkin_date.strftime("%Y-%m-%d")
-        checkout_expected_formatted = checkout_date.strftime("%Y-%m-%d")
-
-        # Validate dates
-        assert (
-            checkin_actual == checkin_expected_formatted
-        ), f"Expected checkin date {checkin_expected_formatted}, but got {checkin_actual}"
-
-        assert (
-            checkout_actual == checkout_expected_formatted
-        ), f"Expected checkout date {checkout_expected_formatted}, but got {checkout_actual}"
+        self.goto()
+        self.search_destination(destination)
+        self.select_dates(checkin_date, checkout_date)
+        self.select_number_of_guests(number_of_guests)
+        self.submit_search()

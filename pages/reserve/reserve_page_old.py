@@ -1,8 +1,8 @@
 from playwright.sync_api import Page, expect
 
-import utils.dates as utils
-from pages.reserve.reserve_page_base import ReservePage
+from pages.reserve.reserve_page import ReservePage
 from pages.results.listing import Listing
+from utils import dates, result_files
 
 
 class ReservePageOld(ReservePage):
@@ -16,10 +16,10 @@ class ReservePageOld(ReservePage):
 
         expect(self.page.get_by_text(f"{guest_count} guests")).to_be_visible()
 
-        formated_dates = utils.format_reservation_dates(checkin, checkout)
+        formated_dates = dates.format_reservation_dates(checkin, checkout)
         expect(self.page.get_by_text(formated_dates)).to_be_visible()
 
-    def log_price_details(self):
+    def log_price_details(self, destination: str) -> None:
         price_details = self.price_detail.all()
 
         assert len(price_details) != 0, "No price details found"
@@ -40,4 +40,4 @@ class ReservePageOld(ReservePage):
 
             costs[description] = cost
 
-        super().dump_cost_details(costs)
+        result_files.save_json_to_file(f"{destination}_cost_details", costs)

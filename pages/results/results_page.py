@@ -1,12 +1,12 @@
 import dataclasses
-import json
-import os
+import re
 from datetime import date
+from urllib.parse import parse_qs, urlparse
 
 from playwright.sync_api import Page, expect
 
 from pages.results.listing import Listing
-import utils.dates as utils
+from utils import dates, result_files
 
 
 class ResultsPage:
@@ -16,15 +16,19 @@ class ResultsPage:
         self.search_dates = page.get_by_test_id("little-search-anytime").locator("div")
         self.search_button = page.get_by_test_id("little-search-icon")
         self.guest_count = page.get_by_test_id("little-search-guests")
-        # TODO: Rewrite as component
         # Filters listings to exclude those in 'Available for similar dates' category
         self.listings = page.get_by_test_id("card-container").filter(has_not_text=" – ")
         self.card_title = page.get_by_test_id("listing-card-title")
         self.price = page.get_by_test_id("price-availability-row").locator(
             "css=button span:first-child"
         )
-        # TODO: Handle cases when rating is 'New'
         self.rating = page.get_by_text("average rating")
+
+    def validate_airbnb_url(
+        self, destination: str, checkin_date: date, checkout_date: date
+    ) -> None:
+        self.__validate_destination(destination)
+        self.__validate_booking_dates(checkin_date, checkout_date)
 
     def validate_results(
         self,
@@ -35,25 +39,23 @@ class ResultsPage:
     ) -> None:
         expect(self.search_location).to_have_text(destination)
 
-        expected_dates = utils.format_reservation_dates(checkin_date, checkout_date)
-
+        expected_dates = dates.format_reservation_dates(checkin_date, checkout_date)
         expect(self.search_dates).to_have_text(expected_dates)
 
-        # TODO: Use better guest count selector as the current one returns
-        # span+div texts. Then instead of contains, use exact match
         expect(self.guest_count).to_contain_text(f"{guests} guests")
 
-    def get_cheapest_highest_rated(self) -> Listing:
+    def get_cheapest_highest_rated(self, destination) -> Listing:
         listings = self.listings.all()
 
         results: list[Listing] = []
 
-        for index, listing in enumerate(listings):
+        for listing in listings:
             try:
                 title = listing.locator(self.card_title).text_content()
                 price_text = listing.locator(self.price).text_content(timeout=5_000)
                 price = int("".join(filter(str.isdigit, price_text)))
 
+                # Handle cases when rating is 'New' or not available
                 if listing.locator(self.rating).count() == 0:
                     print(f"Listing '{title}' has no rating")
                     continue
@@ -64,7 +66,7 @@ class ResultsPage:
 
                 listing = Listing(title, price, rating, f"https://www.airbnb.com{url}")
                 results.append(listing)
-            except Exception as e:
+            except Exception as _:
                 print(f"Failed to parse listing: https://www.airbnb.com{url}")
 
         assert results, "No listings found"
@@ -79,9 +81,9 @@ class ResultsPage:
         cheapest = min(top_rated, key=lambda r: r.price)
 
         # Save to JSON file
-        os.makedirs("temp", exist_ok=True)
-        with open("temp/cheapest_high_rated.json", "w") as f:
-            json.dump(dataclasses.asdict(cheapest), f, indent=2)
+        result_files.save_json_to_file(
+            f"{destination}_cheapest_high_rated", dataclasses.asdict(cheapest)
+        )
 
         return cheapest
 
@@ -94,3 +96,36 @@ class ResultsPage:
             if title == listing.title:
                 l.click()
                 break
+
+    def __validate_destination(self, expected_destination: str) -> None:
+        match = re.search(r"/s/([^/]+)/homes", self.page.url)
+
+        actual_destination = ""
+        if match:
+            actual_destination = match.group(1)
+
+        assert (
+            expected_destination.lower().replace(" ", "-") == actual_destination.lower()
+        ), f"Expected location {expected_destination} in URL does not match actual location {actual_destination}"
+
+    def __validate_booking_dates(self, checkin: date, checkout: date) -> None:
+        parsed_url = urlparse(self.page.url)
+        params = parse_qs(parsed_url.query)
+
+        checkin_actual = params.get("checkin", [None])[0]
+        checkout_actual = params.get("checkout", [None])[0]
+
+        assert checkin_actual, "Checkin date is missing in URL"
+        assert checkout_actual, "Checkout date is missing in URL"
+
+        checkin_expected_formatted = checkin.strftime("%Y-%m-%d")
+        checkout_expected_formatted = checkout.strftime("%Y-%m-%d")
+
+        # Validate dates
+        assert (
+            checkin_actual == checkin_expected_formatted
+        ), f"Expected checkin date {checkin_expected_formatted}, but got {checkin_actual}"
+
+        assert (
+            checkout_actual == checkout_expected_formatted
+        ), f"Expected checkout date {checkout_expected_formatted}, but got {checkout_actual}"

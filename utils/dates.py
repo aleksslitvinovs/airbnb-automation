@@ -23,5 +23,5 @@ def format_reservation_dates(
 
     if include_year:
         expected_dates = f"{expected_dates}, {checkin_date.year}"
-        
+
     return expected_dates

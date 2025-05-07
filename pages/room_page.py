@@ -16,5 +16,5 @@ class RoomPage:
         self.close_translation_dialog_button.click()
 
         cheapest_listing.full_title = self.listing_title.text_content()
-        
+
         self.reserve_button.click()
