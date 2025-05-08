@@ -10,11 +10,27 @@ class ReservePageOld(ReservePage):
         self.page = page
         self.listing_title = page.locator("#LISTING_CARD-title")
         self.price_detail = page.locator("[data-section-id='PRICE_DETAIL'] > div > div > div > div")
+        self.county_code_dropdown = page.get_by_test_id("login-signup-countrycode")
+        self.phone_input = page.locator("#phoneInputphone-login")
 
-    def validate_reservation(self, guest_count: int, checkin: str, checkout: str, listing: Listing):
+    def enter_phone_number(self, country: str, phone: str):
+        self.county_code_dropdown.select_option(country)
+        self.phone_input.fill(phone)
+        self.phone_input.press("Enter")
+
+    def validate_reservation(
+        self,
+        number_of_adults: int,
+        number_of_children: int,
+        checkin: str,
+        checkout: str,
+        listing: Listing,
+    ):
         expect(self.listing_title).to_have_text(listing.full_title)
 
-        expect(self.page.get_by_text(f"{guest_count} guests")).to_be_visible()
+        expect(
+            self.page.get_by_text(f"{number_of_adults+number_of_children} guests")
+        ).to_be_visible()
 
         formated_dates = dates.format_reservation_dates(checkin, checkout)
         expect(self.page.get_by_text(formated_dates)).to_be_visible()

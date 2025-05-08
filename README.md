@@ -2,17 +2,15 @@
 
 ## Setup
 
-1. Nake sure you have Docker installed and running.
+1. Make sure you have Docker installed and running.
 2. Run `./setup.sh` to setup the environment and install dependencies.
 
 ## Usage
 
-### Simple
-
 To run tests using Docker, use the following command:
 
 ```bash
-docker run --rm -v $(pwd)/temp:/app/temp playwright-tests
+docker run --rm -v $(pwd)/temp:/app/temp airbnb-automation
 ```
 
 To run tests using the local environment, use the following command:

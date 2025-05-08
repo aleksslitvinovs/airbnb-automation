@@ -17,9 +17,9 @@ def format_reservation_dates(
     expected_dates = ""
 
     if checkin_date.month == checkout_date.month:
-        expected_dates = f"{checkin_date.strftime('%B')} {checkin_date.day} – {checkout_date.day}"
+        expected_dates = f"{checkin_date.strftime('%b')} {checkin_date.day} – {checkout_date.day}"
     else:
-        expected_dates = f"{checkout_date.strftime('%B')} {checkin_date.day} – {checkout_date.strftime('%B')} {checkout_date.day}"
+        expected_dates = f"{checkin_date.strftime('%b')} {checkin_date.day} – {checkout_date.strftime('%b')} {checkout_date.day}"
 
     if include_year:
         expected_dates = f"{expected_dates}, {checkin_date.year}"

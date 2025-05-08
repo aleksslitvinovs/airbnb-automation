@@ -5,7 +5,18 @@ from pages.results.listing import Listing
 
 class ReservePage:
     @abstractmethod
-    def validate_reservation(self, guest_count: int, checkin: str, checkout: str, listing: Listing):
+    def enter_phone_number(self, country: str, phone: str):
+        pass
+
+    @abstractmethod
+    def validate_reservation(
+        self,
+        number_of_adults: int,
+        number_of_children: int,
+        checkin: str,
+        checkout: str,
+        listing: Listing,
+    ):
         pass
 
     @abstractmethod

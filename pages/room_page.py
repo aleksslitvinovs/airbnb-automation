@@ -13,7 +13,11 @@ class RoomPage:
         self.phone_input = page.locator("#phoneInputphone-login")
 
     def reserve_room(self, cheapest_listing: Listing) -> None:
-        self.close_translation_dialog_button.click()
+        try:
+            self.close_translation_dialog_button.click(timeout=5_000)
+        except Exception:
+            # Translation dialog is not present
+            pass
 
         cheapest_listing.full_title = self.listing_title.text_content()
 

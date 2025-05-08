@@ -25,24 +25,32 @@ class ResultsPage:
         self.rating = page.get_by_text("average rating")
 
     def validate_airbnb_url(
-        self, destination: str, checkin_date: date, checkout_date: date
+        self,
+        destination: str,
+        checkin_date: date,
+        checkout_date: date,
+        number_of_adults: int,
+        number_of_children: int,
     ) -> None:
         self.__validate_destination(destination)
         self.__validate_booking_dates(checkin_date, checkout_date)
+        self.__validate_number_of_adults(number_of_adults)
+        self.__validate_number_of_children(number_of_children)
 
     def validate_results(
         self,
         destination: str,
         checkin_date: date,
         checkout_date: date,
-        guests: int,
+        number_of_adults: int,
+        number_of_children: int,
     ) -> None:
         expect(self.search_location).to_have_text(destination)
 
         expected_dates = dates.format_reservation_dates(checkin_date, checkout_date)
         expect(self.search_dates).to_have_text(expected_dates)
 
-        expect(self.guest_count).to_contain_text(f"{guests} guests")
+        expect(self.guest_count).to_contain_text(f"{number_of_adults+number_of_children} guests")
 
     def get_cheapest_highest_rated(self, destination) -> Listing:
         listings = self.listings.all()
@@ -129,3 +137,27 @@ class ResultsPage:
         assert (
             checkout_actual == checkout_expected_formatted
         ), f"Expected checkout date {checkout_expected_formatted}, but got {checkout_actual}"
+
+    def __validate_number_of_adults(self, expected_adult_count: int) -> None:
+        parsed_url = urlparse(self.page.url)
+        params = parse_qs(parsed_url.query)
+
+        adult_count_actual = params.get("adults", [None])[0]
+
+        assert adult_count_actual, "Adult count is missing in URL"
+
+        assert (
+            str(expected_adult_count) == adult_count_actual
+        ), f"Expected {expected_adult_count} adults, but got {adult_count_actual}"
+
+    def __validate_number_of_children(self, expected_child_count: int) -> None:
+        parsed_url = urlparse(self.page.url)
+        params = parse_qs(parsed_url.query)
+
+        child_count_actual = params.get("children", [None])[0]
+
+        assert child_count_actual, "Children count is missing in URL"
+
+        assert (
+            str(expected_child_count) == child_count_actual
+        ), f"Expected {expected_child_count} children, but got {child_count_actual}"
