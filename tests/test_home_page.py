@@ -25,7 +25,7 @@ def test_search_destination(page, destination: str) -> None:
     )
 
     results_page = ResultsPage(page)
-    results_page.validate_airbnb_url(
+    results_page.validate_url(
         destination, checkin, checkout, number_of_adults, number_of_children
     )
     results_page.validate_results(
@@ -57,6 +57,16 @@ def test_search_destination(page, destination: str) -> None:
 
 
 def __get_dates() -> tuple[date, date]:
+    """
+    Generates a random check-in and check-out date.
+    This function calculates two dates:
+        - The check-in date is within 7 days from today's date.
+        - The check-out date is within 7 days from check-in date.
+
+    Returns:
+        tuple[date, date]: A tuple containing the check-in and check-out dates.
+    """
+
     random_delta = random.randint(1, 7)
     checkin = date.today() + timedelta(days=random_delta)
 
@@ -66,9 +76,15 @@ def __get_dates() -> tuple[date, date]:
     return checkin, checkout
 
 
-# Retrieves page model based whether new or old page is displayed as it seems
-# that Airbnb is currently doing A/B testing
 def __get_page_model(page: Page) -> ReservePage:
+    """
+    Retrieves the page model based on the current page displayed as it seems
+    that Airbnb is currently doing A/B testing
+
+    Returns:
+        ReservePage: The page model for the current page.
+    """
+
     time.sleep(3)
 
     if page.get_by_test_id("step-0").is_visible():

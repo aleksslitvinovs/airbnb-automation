@@ -24,7 +24,7 @@ class ResultsPage:
         )
         self.rating = page.get_by_text("average rating")
 
-    def validate_airbnb_url(
+    def validate_url(
         self,
         destination: str,
         checkin_date: date,
@@ -95,7 +95,7 @@ class ResultsPage:
 
         return cheapest
 
-    def select_cheapest_highest_rated(self, listing: Listing):
+    def select_cheapest_highest_rated(self, listing: Listing) -> None:
         listings = self.listings.all()
 
         for l in listings:
